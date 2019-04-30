@@ -39,6 +39,9 @@ class Vector:
         self.copyFrom(other, 0, other.size())
         return self
 
+    def __len__(self):
+        return self._size
+
     def permute(self):  # 随机置乱向量
         for i in range(1, self._size):
             k = random.choice(range(i))

@@ -6,6 +6,7 @@
 @file: chr05.py
 @time: 2019/5/30 15:30
 """
+from chr04 import Stack, Queue
 
 
 class BinNode:
@@ -28,19 +29,121 @@ class BinNode:
         self.rc = BinNode(data=e, parent=self)
 
     def succ(self):
-        pass
+        s = self
+        if s.rc:
+            s = s.rc
+            while s.HasLChild():
+                s = s.lc
+        else:
+            while s.IsRChild():
+                s = s.parent
+            s = s.parent
+        return s
 
-    def travLevel(self):
-        pass
+    def travLevel(self, visit=print):
+        Q = Queue()
+        Q.enqueue(self)
+        while Q.size() != 0:
+            x = Q.dequeue()
+            visit(x.data)
+            if x.HasLChild(): Q.enqueue(x.lc)
+            if x.HasRChild(): Q.enqueue(x.rc)
 
-    def travPre(self):
-        pass
+    def travPre(self, visit=print):  # 递归版本先序遍历
+        S = Stack()
+        x = self
+        while True:
+            while x:
+                visit(x.data)
+                S.push(x.rc)
+                x = x.lc
+            if S.empty(): break
+            x = S.pop()
 
-    def travIn(self):
-        pass
+    def travPreR(self, visit=print):  # 递归版本先序遍历
+        if not self: return
+        visit(self.data)
+        if self.lc:
+            self.lc.travPreR(visit)
+        if self.rc:
+            self.rc.travPreR(visit)
 
-    def travPost(self):
-        pass
+    def travIn(self, visit=print):  # 递归版中序遍历
+        S = Stack()
+        x = self
+        while True:
+            while x:
+                S.push(x)
+                x = x.lc
+            if S.empty(): break
+            x = S.pop()
+            visit(x.data)
+            x = x.rc
+
+    def travIn2(self, visit=print):  # 递归版中序遍历
+        S = Stack()
+        x = self
+        while True:
+            if x:
+                S.push(x)
+                x = x.lc
+            elif not S.empty():
+                x = S.pop()
+                visit(x.data)
+                x = x.rc
+            else:
+                break
+
+    def travIn3(self, visit=print):  # 递归版中序遍历
+        backtrack = False  # 标识是否需要回退
+        x = self
+        while True:
+            if not backtrack and x.HasLChild():  # 一直往左
+                x = x.lc
+            else:
+                visit(x.data)
+                if x.HasRChild():
+                    x = x.rc
+                    backtrack = False
+                else:
+                    x = x.succ()
+                    if not x: break
+                    backtrack = True
+
+    def travInR(self, visit=print):  # 递归版本中序遍历
+        if not self: return
+        if self.lc:
+            self.lc.travInR(visit)
+        visit(self.data)
+        if self.rc:
+            self.rc.travInR(visit)
+
+    def travPost(self, visit=print):  # 递归版本后序遍历
+        S = Stack()
+        x = self
+        if x:
+            S.push(x)
+        while not S.empty():
+            if x.parent and S.top() != x.parent:
+                x = S.top()
+                while x:
+                    if x.HasLChild:
+                        if x.HasRChild: S.push(x.rc)
+                        S.push(x.lc)
+                    else:
+                        S.push(x.rc)
+                    x = S.top()
+                S.pop()
+            x = S.pop()
+            visit(x.data)
+
+    def travPostR(self, visit=print):  # 递归版本后序遍历
+        if not self: return
+        if self.lc:
+            self.lc.travPostR(visit)
+        if self.rc:
+            self.rc.travPostR(visit)
+        visit(self.data)
 
     def __lt__(self, other):
         return self.data > other.data
@@ -91,13 +194,6 @@ class BinNode:
                 return self.parent.rc
 
 
-def stature(x: BinNode):
-    if x:
-        return x.height
-    else:
-        return -1
-
-
 class BinTree:
     def __init__(self):
         self._size = 0
@@ -144,27 +240,63 @@ class BinTree:
         self.updateHeightAbove(x)
         return x.lc
 
-    def insertAsRC(self,x, e):
+    def insertAsRC(self, x, e):
         self._size += 1
-        x.insertAsRC(e)
+        x.insertAsRc(e)
         self.updateHeightAbove(x)
         return x.rc
 
-    @staticmethod
-    def attachAsLC(x, T):
-        pass
+    def attachAsLC(self, x: BinNode, T):
+        x.lc = T.root()
+        x.lc.parent = x
+        self._size += T.size()
+        self.updateHeightAbove(x)
+        T._root = None
+        return x
+
+    def attachAsRC(self, x, T):
+        x.rc = T.root()
+        x.rc.parent = x
+        self._size += T.size()
+        self.updateHeightAbove(x)
+        T._root = None
+        return x
+
+    def remove(self, x: BinNode):
+        if x.IsRoot():
+            x = None
+        else:
+            if x.IsLChild():
+                x.parent.lc = None
+            else:
+                x.parent.rc = None
+        self.updateHeightAbove(x.parent)
+        n = self.removeAt(x)
+        self._size -= n
+        return n
 
     @staticmethod
-    def attachAsRC(x, T):
-        pass
+    def removeAt(x):  # 计算删除的节点数
+        if not x:
+            return 0
+        n = 1 + BinTree.removeAt(x.lc) + BinTree.removeAt(x.rc)
+        return n
 
-    @staticmethod
-    def remove(x):
-        pass
-
-    @staticmethod
-    def secede(x):
-        pass
+    def secede(self, x):
+        if x.IsRoot():
+            x = None
+        else:
+            if x.IsLChild():
+                x.parent.lc = None
+            else:
+                x.parent.rc = None
+        self.updateHeightAbove(x.parent)
+        S = BinTree()
+        S._root = x
+        x.parent = None
+        S._size = x.size()
+        self._size -= S._size
+        return S
 
     def travLevel(self):
         if self._root:
@@ -180,10 +312,19 @@ class BinTree:
 
     def travPost(self):
         if self._root:
-            self._root.travPost()
+            self._root.travPostR()
 
     def __eq__(self, other):
         return self._root and other.root() and (self._root == other.root())
 
     def __lt__(self, other):
         return self._root and other.root() and (self._root > other.root())
+
+
+def test():
+    bt = BinTree()
+    bt.insertAsRoot(1)
+    lc = bt.insertAsLC(bt.root(), 2)
+    lc = bt.insertAsLC(lc, 7)
+    rc = bt.insertAsRC(bt.root(), 3)
+    rc = bt.insertAsRC(rc, 3)

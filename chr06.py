@@ -9,6 +9,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from chr02 import Vector
+from chr03 import List
 
 
 class VStatus(Enum):  # 顶点状态枚举类型
@@ -68,10 +69,10 @@ class GraphMatrix:
             if self.exists(i, j):
                 return j
 
-    def exists(self, i, j):
+    def exists(self, i, j):  # i到j的边是否存在
         return 0 <= i <= self.n and 0 <= j <= self.n and self._E[i][j] is not None
 
-    def staatus(self, i):
+    def status(self, i):
         return self._V[i].status
 
     def dTime(self, i):
@@ -116,14 +117,14 @@ class GraphMatrix:
     def weight(self, i, j):
         return self._E[i][j].weight
 
-    def insertE(self, edge, w, i, j):
+    def insertE(self, edge, w, i, j):  # 插入i到j的边，权重为w
         if self.exists(i, j): return
         self._E[i][j] = Edge(edge, w)
         self.e += 1
         self._V[i].outDegree += 1
         self._V[j].inDegree += 1
 
-    def removeE(self, i, j):
+    def removeE(self, i, j):  # 移除i到j的边
         eBak = self.edge(i, j)
         self._E[i][j] = None
         self.e -= 1
@@ -132,5 +133,48 @@ class GraphMatrix:
         return eBak
 
 
-class Graph:
-    pass
+class Graph(GraphMatrix):
+    def exists(self, i, j):  # i到j是否有边
+        if 0 <= i <= self.n and 0 <= j <= self.n:
+            if self.vertex(j) == self._E[i].first.succ().data:
+                return True
+        return False
+
+    def insertV(self, vertex: Vertex):  # 插入顶点
+        self.n += 1
+        self._E.insert(self.n, List().insertAsFirst(vertex))  # 增加新的顶点向量
+        return self._V.insert(self.n, vertex)  # 增加新顶点
+
+    def removeV(self, i):  # 删除第i个顶点及其关联的边
+        if len(self._E[i]) > 1:
+            bak = self._E[i][1].data
+            for v in self._V:
+                if bak == v:
+                    v.inDegree -= 1
+                    break
+        self._E.remove(self._E[i])
+        self.n -= 1
+        vBak = self.vertex(i)
+        self._V.remove(i)
+        for j in range(self.n):
+            for k in range(len(self._E[j])):
+                if self._E[j][k].data == vBak:
+                    self._E[j].remove(self._E[k])
+                    if k == 1:
+                        self._V[j].outDegree -= 1
+        return vBak
+
+    def insertE(self, edge, w, i, j):  # 插入i到j的边，权重为w
+        if self.exists(i, j): return  # 已存在时不处理
+        self._E[i][j].data = Edge(edge, w)
+        self.e += 1
+        self._V[i].outDegree += 1
+        self._V[j].inDegree += 1
+
+    def removeE(self, i, j):  # 移除i到j的边
+        eBak = self.edge(i, j)
+        self._E[i].remove(self._E[i][j])
+        self.e -= 1
+        self._V[i].outDegree -= 1
+        self._V[j].inDegree -= 1
+        return eBak

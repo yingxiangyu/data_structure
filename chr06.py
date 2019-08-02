@@ -45,6 +45,14 @@ class Edge:  # 边对象
     type: EType = EType.UNDETERMINED  # 类型
 
 
+# 使用nametuple实现c的结构体，3.7版本可以设置默认值
+# from collections import namedtuple
+#
+# Vertex = namedtuple('Vertex', ['data', 'inDegree', 'outDegree', 'status', 'dTime', 'fTime', 'parent', 'priority'],
+#                     defaults=[0, 0, 0, VStatus.UNDISCOVERED, -1, -1, float('inf')])
+# Edge = namedtuple('Edge', ['data', 'weight', 'type'], defaults=[0, 0, EType.UNDETERMINED])
+#
+
 class GraphMatrix:
     def __init__(self, n=0, e=0):
         self.n = 0  # 顶点数

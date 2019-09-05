@@ -17,14 +17,12 @@ class VStatus(Enum):  # 顶点状态枚举类型
     DISCOVERED = 1
     VISITED = 2
 
-
 class EType(Enum):  # 遍历树中边的类型
     UNDETERMINED = 0
     TREE = 1
     CROSS = 2
     FORWARD = 3
     BACKWARD = 4
-
 
 @dataclass
 class Vertex:  # 顶点对象
@@ -37,13 +35,11 @@ class Vertex:  # 顶点对象
     parent: int = -1  # 遍历树中父节点
     priority: int = float('inf')  # 优先级数,默认最高
 
-
 @dataclass
 class Edge:  # 边对象
     data: int = 0  # 数据
     weight: int = 0  # 权重
-    type: EType = EType.UNDETERMINED  # 类型
-
+    etype: EType = EType.UNDETERMINED  # 类型
 
 # 使用nametuple实现c的结构体，3.7版本可以设置默认值
 # from collections import namedtuple
@@ -53,21 +49,21 @@ class Edge:  # 边对象
 # Edge = namedtuple('Edge', ['data', 'weight', 'type'], defaults=[0, 0, EType.UNDETERMINED])
 #
 
-class GraphMatrix:
-    def __init__(self, n=0, e=0):
+class GraphMatrix:  # 基于向量，邻接矩阵实现图
+    def __init__(self):
         self.n = 0  # 顶点数
         self.e = 0  # 边数
-        self._V = Vector()  # 顶点集合
-        self._E = Vector()  # 边集合
+        self.__V = Vector()  # 顶点集合
+        self.__E = Vector()  # 边集合
 
     def vertex(self, i):
-        return self._V[i].data
+        return self.__V[i].data
 
     def inDegree(self, i):
-        return self._V[i].InDegree
+        return self.__V[i].InDegree
 
     def outDegree(self, i):
-        return self._V[i].outDegree
+        return self.__V[i].outDegree
 
     def firstNbr(self, i):
         return self.nextNbr(i, self.n)
@@ -78,111 +74,167 @@ class GraphMatrix:
                 return j
 
     def exists(self, i, j):  # i到j的边是否存在
-        return 0 <= i <= self.n and 0 <= j <= self.n and self._E[i][j] is not None
+        return 0 <= i <= self.n and 0 <= j <= self.n and self.__E[i][
+            j] is not None
 
     def status(self, i):
-        return self._V[i].status
+        return self.__V[i].status
 
     def dTime(self, i):
-        return self._V[i].dTime
+        return self.__V[i].dTime
 
     def fTime(self, i):
-        return self._V[i].fTime
+        return self.__V[i].fTime
 
     def parent(self, i):
-        return self._V[i].parent
+        return self.__V[i].parent
 
     def priority(self, i):
-        return self._V[i].priority
+        return self.__V[i].priority
 
     def insertV(self, vertex: Vertex):  # 插入顶点
         for j in range(self.n):
-            self._E[j].insert(None)  # 各顶点增加一个边记录位置
+            self.__E[j].insert(None)  # 各顶点增加一个边记录位置
         self.n += 1
-        self._E.insert(self.n, Vector().copyFrom([None] * self.n, 0, self.n))  # 增加新的顶点向量
-        return self._V.insert(self.n, vertex)  # 增加新顶点
+        self.__E.insert(self.n, Vector().copyFrom([None] * self.n, 0,
+                                                  self.n))  # 增加新的顶点向量
+        return self.__V.insert(self.n, vertex)  # 增加新顶点
 
     def removeV(self, i):  # 删除第i个顶点及其关联的边
-        for j in range(self.n):
-            if self.exists(i, j):
-                self._E[i][j] = None
-                self._V[j].inDegree -= 1
-        self._E.remove(i)
+        for j in range(self.n):  # 所有出边
+            if self.exists(i, j):  # 存在
+                self.__E[i][j] = None  # 删除出边，可选，后续删除整条边
+                self.__V[j].inDegree -= 1  # 顶点J入度-1
+        self.__E.remove(i)  # 删除i的边数据
         self.n -= 1
-        vBak = self.vertex(i)
-        self._V.remove(i)
+        vBak = self.vertex(i)  # 需要删除的顶点备份
+        self.__V.remove(i)  # 删除顶点
         for j in range(self.n):
-            if self._E.remove(i):
-                self._V[j].outDegree -= 1
+            if not self.__E[j][i] is None:  # 判断第j的顶点是否有到i的边
+                self.__E[j][i] = None  # 有边时删除
+                self.__V[j].outDegree -= 1  # 出度减1
         return vBak
 
     def type(self, i, j):
-        return self._E[i][j].type
+        return self.__E[i][j].etype
 
     def edge(self, i, j):
-        return self._E[i][j].data
+        return self.__E[i][j].data
 
     def weight(self, i, j):
-        return self._E[i][j].weight
+        return self.__E[i][j].weight
 
-    def insertE(self, edge, w, i, j):  # 插入i到j的边，权重为w
-        if self.exists(i, j): return
-        self._E[i][j] = Edge(edge, w)
+    def insertE(self, edge: Edge, i, j):  # 插入i到j的边
+        if self.exists(i, j): return  # 边存在则不做任何处理）
+        self.__E[i][j] = edge
         self.e += 1
-        self._V[i].outDegree += 1
-        self._V[j].inDegree += 1
+        self.__V[i].outDegree += 1
+        self.__V[j].inDegree += 1
 
     def removeE(self, i, j):  # 移除i到j的边
         eBak = self.edge(i, j)
-        self._E[i][j] = None
+        self.__E[i][j] = None
         self.e -= 1
-        self._V[i].outDegree -= 1
-        self._V[j].inDegree -= 1
+        self.__V[i].outDegree -= 1
+        self.__V[j].inDegree -= 1
         return eBak
 
+@dataclass
+class GraphEdge(Edge):  # 邻接表边对象
+    vertex: Vertex = Vertex()  # 关联的顶点
 
-class Graph(GraphMatrix):
-    def exists(self, i, j):  # i到j是否有边
-        if 0 <= i <= self.n and 0 <= j <= self.n:
-            if self.vertex(j) == self._E[i].first.succ().data:
+class Graph:  # 邻接表实现图
+    def __init__(self):
+        self.n = 0  # 顶点数
+        self.e = 0  # 边数
+        self.__L = list()  # 邻接矩阵的集合
+
+    def vertex(self, i):
+        return self.__L[i][0].data
+
+    def inDegree(self, i):
+        return self.__L[i][0].InDegree
+
+    def outDegree(self, i):
+        return self.__L[i][0].outDegree
+
+    def firstNbr(self, i):
+        return self.nextNbr(i, self.n)
+
+    def nextNbr(self, i, j):
+        for e in self.__L[i][1:]:
+            if e.vertex == self.__L[j][0]:
+                return e.succ.vertex
+
+    def exists(self, i, j):  # i到j的边是否存在
+        for e in self.__L[i][1:]:
+            if e.vertex == self.__L[j][0]:
                 return True
         return False
 
+    def status(self, i):
+        return self.__L[i][0].status
+
+    def dTime(self, i):
+        return self.__L[i][0].dTime
+
+    def fTime(self, i):
+        return self.__L[i][0].fTime
+
+    def parent(self, i):
+        return self.__L[i][0].parent
+
+    def priority(self, i):
+        return self.__L[i][0].priority
+
     def insertV(self, vertex: Vertex):  # 插入顶点
+        self.__L.append(List().insertAsFirst(vertex))
         self.n += 1
-        self._E.insert(self.n, List().insertAsFirst(vertex))  # 增加新的顶点向量
-        return self._V.insert(self.n, vertex)  # 增加新顶点
 
     def removeV(self, i):  # 删除第i个顶点及其关联的边
-        if len(self._E[i]) > 1:
-            bak = self._E[i][1].data
-            for v in self._V:
-                if bak == v:
-                    v.inDegree -= 1
-                    break
-        self._E.remove(self._E[i])
+        for e in self.__L[i][1:]:  # 遍历与i相连的顶点
+            e.vertex.inDegree -= 1  # 入度-1
+        vBak = self.__L[i][0]  # 需要删除的顶点备份
+        self.__L.remove(i)  # 删除i
         self.n -= 1
-        vBak = self.vertex(i)
-        self._V.remove(i)
-        for j in range(self.n):
-            for k in range(len(self._E[j])):
-                if self._E[j][k].data == vBak:
-                    self._E[j].remove(self._E[k])
-                    if k == 1:
-                        self._V[j].outDegree -= 1
+        for v in self.__L:  # 遍历剩余顶点
+            for p in v[1:]:  # 遍历每个顶点的边
+                if p.vertex == vBak:  # 与i相连时删除
+                    v[0].outDegree -= 1
+                    v.remove(p)
+                    continue
         return vBak
 
-    def insertE(self, edge, w, i, j):  # 插入i到j的边，权重为w
-        if self.exists(i, j): return  # 已存在时不处理
-        self._E[i][j].data = Edge(edge, w)
+    def type(self, i, j):
+        for p in self.__L[i][1:]:
+            if p.vertex == self.__L[j][0]:
+                return p.etype
+
+    def edge(self, i, j):
+        for p in self.__L[i][1:]:
+            if p.vertex == self.__L[j][0]:
+                return p.data
+
+    def weight(self, i, j):
+        for p in self.__L[i][1:]:
+            if p.vertex == self.__L[j][0]:
+                return p.weight
+
+    def insertE(self, edge: Edge, i, j):  # 插入i到j的边
+        if self.exists(i, j): return  # 边存在则不做任何处理）
+        e = GraphEdge(vertex=self.__L[j][0], data=edge.data, weight=edge.weight
+                      , etype=edge.etype)
+        self.__L[i].insertAsLast(e)
         self.e += 1
-        self._V[i].outDegree += 1
-        self._V[j].inDegree += 1
+        self.__L[i][0].outDegree += 1
+        self.__L[j][0].inDegree += 1
 
     def removeE(self, i, j):  # 移除i到j的边
         eBak = self.edge(i, j)
-        self._E[i].remove(self._E[i][j])
+        for p in self.__L[i][1:]:
+            if p.vertex == self.__L[j][0]:
+                self.__L[i].remove(p)
         self.e -= 1
-        self._V[i].outDegree -= 1
-        self._V[j].inDegree -= 1
+        self.__L[i][0].outDegree -= 1
+        self.__L[j][0].inDegree -= 1
         return eBak

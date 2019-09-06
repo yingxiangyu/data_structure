@@ -56,7 +56,21 @@ class GraphMatrix:  # 基于向量，邻接矩阵实现图
         self.__V = Vector()  # 顶点集合
         self.__E = Vector()  # 边集合
 
+    def reset(self):
+        for i in range(self.n):
+            self.vertex(i).status = VStatus.UNDISCOVERED
+            self.vertex(i).dTime = -1
+            self.vertex(i).fTime = -1
+            self.vertex(i).parent = -1
+            self.vertex(i).priority = float('inf')
+            for j in range(self.n):
+                if self.exists(i, j):
+                    self.__E[i][j].type = EType.UNDETERMINED
+
     def vertex(self, i):
+        return self.__V[i]
+
+    def vertex_data(self, i):
         return self.__V[i].data
 
     def inDegree(self, i):
@@ -149,7 +163,19 @@ class Graph:  # 邻接表实现图
         self.e = 0  # 边数
         self.__L = list()  # 邻接矩阵的集合
 
+    def reset(self):
+        for v in self.__L:
+            v[0].status = VStatus.UNDISCOVERED
+            v[0].dTime = v[0].fTime = -1
+            v[0].parent = -1
+            v[0].priority = float('inf')
+            for e in v[1:]:
+                e.type = EType.UNDETERMINED
+
     def vertex(self, i):
+        return self.__L[i][0]
+
+    def vertex_data(self, i):
         return self.__L[i][0].data
 
     def inDegree(self, i):

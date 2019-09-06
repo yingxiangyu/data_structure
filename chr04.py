@@ -205,3 +205,7 @@ class Queue(List):
 
     def front(self):
         return self.first().data
+
+    def empty(self):
+        return self._size == 0
+

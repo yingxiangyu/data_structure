@@ -10,6 +10,7 @@ from enum import Enum
 from dataclasses import dataclass
 from chr02 import Vector
 from chr03 import List
+from chr04 import Queue
 
 
 class VStatus(Enum):  # 顶点状态枚举类型
@@ -85,7 +86,7 @@ class GraphMatrix:  # 基于向量，邻接矩阵实现图
     def nextNbr(self, i, j):
         for j in range(j - 1, 0, -1):
             if self.exists(i, j):
-                return j
+                return self.__V[j]
 
     def exists(self, i, j):  # i到j的边是否存在
         return 0 <= i <= self.n and 0 <= j <= self.n and self.__E[i][
@@ -187,13 +188,17 @@ class Graph:  # 邻接表实现图
     def outDegree(self, i):
         return self.__L[i][0].outDegree
 
-    def firstNbr(self, i):
-        return self.nextNbr(i, self.n)
+    def firstNbr(self, i) -> Vertex:
+        if len(self.__L[i]) > 1:
+            return self.__L[i][-1]
 
-    def nextNbr(self, i, j):
-        for e in self.__L[i][1:]:
-            if e.vertex == self.__L[j][0]:
-                return e.succ.vertex
+    def allNbr(self, i):  # 返回i个节点的所有邻居
+        return [v.vertex for v in self.__L[i][1:]]
+
+    def nextNbr(self, i, j) -> Vertex:
+        for j in range(j - 1, 0, -1):
+            if self.exists(i, j):
+                return self.__L[j][0]
 
     def exists(self, i, j):  # i到j的边是否存在
         for e in self.__L[i][1:]:
@@ -272,3 +277,22 @@ class Graph:  # 邻接表实现图
         self.__L[i][0].outDegree -= 1
         self.__L[j][0].inDegree -= 1
         return eBak
+
+def bfs(graph: Graph):
+    graph.reset()
+    clock = 0
+
+    def BFS(i: int):
+        nonlocal clock
+        Q = Queue()
+        vertex = graph.vertex(i)
+        vertex.status = VStatus.DISCOVERED
+        Q.enqueue(vertex)
+        while not Q.empty():
+            vertex = Q.dequeue()
+            vertex.dTime = clock
+            clock += 1
+
+    for v in range(graph.n):
+        if graph.vertex(v).status == VStatus.UNDISCOVERED:
+            BFS(v)

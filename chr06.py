@@ -132,7 +132,10 @@ class GraphMatrix:  # 基于向量，邻接矩阵实现图
     def type(self, i, j):
         return self.__E[i][j].etype
 
-    def edge(self, i, j):
+    def edge(self, i, j):  # 方便后续程序修改值，将边对象直接返回
+        return self.__E[i][j]
+
+    def edge_data(self, i, j):
         return self.__E[i][j].data
 
     def weight(self, i, j):
@@ -172,7 +175,7 @@ class Graph:  # 邻接表实现图
             for e in v[1:]:
                 e.type = EType.UNDETERMINED
 
-    def vertex(self, i):
+    def vertex(self, i) -> Vertex:  # 直接返回节点对象，方便后续程序修改
         return self.__L[i][0]
 
     def vertex_data(self, i):
@@ -236,7 +239,12 @@ class Graph:  # 邻接表实现图
             if p.vertex == self.__L[j][0]:
                 return p.etype
 
-    def edge(self, i, j):
+    def edge(self, i, j) -> GraphEdge:  # 直接返回边对象，方便后续程序修改
+        for p in self.__L[i][1:]:
+            if p.vertex == self.__L[j][0]:
+                return p
+
+    def edge_data(self, i, j):
         for p in self.__L[i][1:]:
             if p.vertex == self.__L[j][0]:
                 return p.data

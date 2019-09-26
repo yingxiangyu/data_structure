@@ -86,7 +86,8 @@ class GraphMatrix:  # 基于向量，邻接矩阵实现图
     def nextNbr(self, i, j):
         for j in range(j - 1, 0, -1):
             if self.exists(i, j):
-                return self.__V[j]
+                return j
+        return -1
 
     def exists(self, i, j):  # i到j的边是否存在
         return 0 <= i <= self.n and 0 <= j <= self.n and self.__E[i][
@@ -157,6 +158,9 @@ class GraphMatrix:  # 基于向量，邻接矩阵实现图
         self.__V[j].inDegree -= 1
         return eBak
 
+    def __getitem__(self, item: int):
+        return self.__V[item]
+
 @dataclass
 class GraphEdge(Edge):  # 邻接表边对象
     vertex: Vertex = Vertex()  # 关联的顶点
@@ -188,17 +192,14 @@ class Graph:  # 邻接表实现图
     def outDegree(self, i):
         return self.__L[i][0].outDegree
 
-    def firstNbr(self, i) -> Vertex:
-        if len(self.__L[i]) > 1:
-            return self.__L[i][-1]
+    def firstNbr(self, i):  # 返回下一个邻居顶点的索引
+        return self.nextNbr(i, self.n)
 
-    def allNbr(self, i):  # 返回i个节点的所有邻居
-        return [v.vertex for v in self.__L[i][1:]]
-
-    def nextNbr(self, i, j) -> Vertex:
+    def nextNbr(self, i, j):
         for j in range(j - 1, 0, -1):
             if self.exists(i, j):
-                return self.__L[j][0]
+                return j
+        return -1
 
     def exists(self, i, j):  # i到j的边是否存在
         for e in self.__L[i][1:]:
@@ -244,10 +245,11 @@ class Graph:  # 邻接表实现图
             if p.vertex == self.__L[j][0]:
                 return p.etype
 
-    def edge(self, i, j) -> GraphEdge:  # 直接返回边对象，方便后续程序修改
+    def edge(self, i, j):  # 直接返回边对象，方便后续程序修改
         for p in self.__L[i][1:]:
             if p.vertex == self.__L[j][0]:
                 return p
+        return None
 
     def edge_data(self, i, j):
         for p in self.__L[i][1:]:
@@ -260,7 +262,7 @@ class Graph:  # 邻接表实现图
                 return p.weight
 
     def insertE(self, edge: Edge, i, j):  # 插入i到j的边
-        if self.exists(i, j): return  # 边存在则不做任何处理）
+        if self.exists(i, j): self.removeE(i, j)  # 边存在则移除
         e = GraphEdge(vertex=self.__L[j][0], data=edge.data, weight=edge.weight
                       , etype=edge.etype)
         self.__L[i].insertAsLast(e)
@@ -278,21 +280,39 @@ class Graph:  # 邻接表实现图
         self.__L[j][0].inDegree -= 1
         return eBak
 
-def bfs(graph: Graph):
-    graph.reset()
+    def __getitem__(self, item: int):
+        return self.__L[item][0]
+
+def bfs(graph: Graph):  # 全图BFS算法
+    graph.reset()  # 初始化、重置图状态
     clock = 0
 
-    def BFS(i: int):
+    def BFS(i: int):  # 第i个节点的BFS算法
         nonlocal clock
-        Q = Queue()
-        vertex = graph.vertex(i)
-        vertex.status = VStatus.DISCOVERED
-        Q.enqueue(vertex)
+        Q = Queue()  # 辅助队列
+        vertex = graph.vertex(i)  # 获取初始化顶点
+        vertex.status = VStatus.DISCOVERED  # 标记为discovered
+        Q.enqueue(i)  # 初始顶点入队
         while not Q.empty():
-            vertex = Q.dequeue()
+            v = Q.dequeue()  # 处理队列首节点
+            vertex = graph[v]
             vertex.dTime = clock
             clock += 1
+            u = graph.firstNbr(v)
+            while True:
+                nbr_vertex = graph[u]
+                if nbr_vertex.status == VStatus.UNDISCOVERED:
+                    nbr_vertex.status = VStatus.DISCOVERED
+                    Q.enqueue(u)
+                    nbr_vertex.parent = v
+                    graph.insertE(Edge(etype=EType.TREE), u, v)
+                else:
+                    graph.insertE(Edge(etype=EType.CROSS), u, v)
+                vertex.status = VStatus.VISITED
+                u = graph.nextNbr(v, u)
+                if u == -1:
+                    break
 
-    for v in range(graph.n):
-        if graph.vertex(v).status == VStatus.UNDISCOVERED:
-            BFS(v)
+    for index in range(graph.n):
+        if graph[index].status == VStatus.UNDISCOVERED:
+            BFS(index)

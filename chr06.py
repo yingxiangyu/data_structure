@@ -316,3 +316,38 @@ def bfs(graph: Graph):  # 全图BFS算法
     for index in range(graph.n):
         if graph[index].status == VStatus.UNDISCOVERED:
             BFS(index)
+
+def dfs(graph: Graph):  # 全图BFS算法
+    graph.reset()  # 初始化、重置图状态
+    clock = 0
+
+    def DFS(v: int):  # 第i个节点的BFS算法
+        nonlocal clock
+        vertex = graph.vertex(v)  # 获取初始化顶点
+        vertex.status = VStatus.DISCOVERED  # 标记为discovered
+        vertex.dTime = clock
+        clock += 1
+        u = graph.firstNbr(v)
+        while True:
+            nbr_vertex = graph[u]
+            if nbr_vertex.status == VStatus.UNDISCOVERED:
+                nbr_vertex.parent = v
+                graph.insertE(Edge(etype=EType.TREE), u, v)
+                DFS(u)
+            elif nbr_vertex.status == VStatus.DISCOVERED:
+                graph.insertE(Edge(etype=EType.BACKWARD), u, v)
+            else:
+                if vertex.dTime < nbr_vertex.dTime:
+                    graph.insertE(Edge(etype=EType.FORWARD), u, v)
+                else:
+                    graph.insertE(Edge(etype=EType.CROSS), u, v)
+            vertex.status = VStatus.VISITED
+            vertex.fTime = clock
+            clock += 1
+            u = graph.nextNbr(v, u)
+            if u == -1:
+                break
+
+    for index in range(graph.n):
+        if graph[index].status == VStatus.UNDISCOVERED:
+            DFS(index)

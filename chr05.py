@@ -23,12 +23,15 @@ class BinNode:
         pass
 
     def insertAsLC(self, e):
+        """将数据e作为左节点插入"""
         self.lc = BinNode(data=e, parent=self)
 
     def insertAsRc(self, e):
+        """将数据e作为右节点插入"""
         self.rc = BinNode(data=e, parent=self)
 
     def succ(self):
+        """返回当前节点中序遍历的直接后继"""
         s = self
         if s.rc:
             s = s.rc
@@ -152,39 +155,51 @@ class BinNode:
         return self.data == other.data
 
     def IsRoot(self):
+        """是否是根节点"""
         return not self.parent
 
     def IsLChild(self):
+        """是否是父节点的左孩子"""
         return not self.IsRoot() and (self == self.parent.lc)
 
     def IsRChild(self):
+        """是否是父节点的右孩子"""
         return not self.IsRoot() and (self == self.parent.rc)
 
     def HasParent(self):
+        """是否有父节点"""
         return not self.IsRoot()
 
     def HasLChild(self):
+        """左节点是否存在"""
         return self.lc
 
     def HasRChild(self):
+        """右节点是否存在"""
         return self.rc
 
     def HasChild(self):
+        """是否还有子节点"""
         return self.HasLChild() or self.HasRChild()
 
     def HasBothChild(self):
+        """是否有两个子节点"""
         return self.HasLChild() and self.HasRChild()
 
     def IsLead(self):
+        """是否为叶结点"""
         return not self.HasChild()
 
     def sibling(self):
+        """返回兄弟节点"""
         return self.parent.rc if self.IsLChild() else self.parent.lc
 
     def uncle(self):
+        """返回叔叔节点"""
         return self.parent.parent.rc if self.parent.IsLChild() else self.parent.parent.lc
 
     def FromParentTo(self):
+        """来自父亲的引用，即自己"""
         if self.IsRoot():
             return self
         else:
@@ -193,6 +208,18 @@ class BinNode:
             else:
                 return self.parent.rc
 
+    def tallerChild(self):
+        """返回两颗子树中较高的子树"""
+        return self.lc if stature(self.lc) >= stature(self.rc) else self.rc
+
+
+def stature(x: BinNode):
+    """返回节点规模"""
+    if x:
+        return x.height
+    else:
+        return -1
+
 
 class BinTree:
     def __init__(self):
@@ -200,15 +227,8 @@ class BinTree:
         self._root = None
 
     @staticmethod
-    def stature(x: BinNode):
-        if x:
-            return x.height
-        else:
-            return -1
-
-    @staticmethod
     def updateHeight(x: BinNode):
-        x.height = 1 + max(BinTree.stature(x.lc), BinTree.stature(x.rc))
+        x.height = 1 + max(stature(x.lc), stature(x.rc))
         return x.height
 
     @staticmethod

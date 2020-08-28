@@ -29,7 +29,7 @@ class BST(BinTree):
         # _hot指向命中节点的父亲节点
         return self.serrch_in(self._root, e)
 
-    def serrch_in(self, v: BinNode, e):
+    def serrch_in(self, v: BinNode, e) -> BinNode:
         """在节点v及其后代中寻找e"""
         if v is None or v.data == e:
             return v
@@ -70,7 +70,7 @@ class BST(BinTree):
         elif not x.HasRChild():
             succ = x = x.lc
         else:
-            remove_node = remove_node.succ()  # 寻找移除节点的后继节点
+            remove_node = remove_node  # 寻找移除节点的后继节点
             # 后继节点是当前节点右子树左侧分支的末端，一定没有左孩子
             x.data, remove_node.data = remove_node.data, x.data
             # 移除节点与后继节点交换，可以只交换数据

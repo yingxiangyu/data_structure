@@ -11,22 +11,26 @@ import random
 
 
 class Vector:
-    def __init__(self):  # 初始化时指定向量大小
+    def __init__(self):
         self._size = 0
         self._elem = []
 
     def copyFrom(self, A, lo, hi):
+        """复制向量A的区间lo到hi，通过复制初始化向量"""
         self._size = 0
         self._elem = []
+        if len(A) <= hi: raise IndexError
         while lo < hi:
             self._elem.append(A[lo])
             self._size += 1
             lo += 1
 
     def size(self):
+        """返回数组当前规模"""
         return self._size
 
     def empty(self):
+        """判断数组是否为空"""
         return self._size == 0
 
     def __getitem__(self, item):
@@ -42,50 +46,58 @@ class Vector:
     def __len__(self):
         return self._size
 
-    def permute(self):  # 随机置乱向量
+    def permute(self):
+        """随机置乱向量"""
         for i in range(1, self._size):
             k = random.choice(range(i))
             self._elem[i], self._elem[k] = self._elem[k], self._elem[i]
 
-    def unsort(self, lo, hi):
-        for i in range(1, hi - lo):
-            k = random.choice(range(i))
-            self._elem[i + lo], self._elem[k + lo] = self._elem[k + lo], self._elem[i + lo]
-
-    def find(self, e, lo, hi):
+    def find(self, data, lo=None, hi=None):
+        """查找指定元素，返回找到的第一个元素索引，不指定区间默认全向量查找"""
+        if lo is None and hi is None:  # 不指定查找区间时在整个数组查找
+            self.find(data, 0, self._size)
         while lo <= hi:
             hi -= 1
-            if self._elem[hi] == e:
+            if self._elem[hi] == data:
                 break
         return hi
 
-    def insert(self, r, e):
-        self._elem.insert(r, e)
+    def disordered(self):
+        """返回向量的逆序对数"""
+        n = 0  # 逆序对数
+        for i in range(1, self._size):
+            if self._elem[i - 1] > self._elem[i]:
+                n += 1
+        return n  # n=0说明有序
 
-    def remove(self, *args):  # python不支持函数重载
-        if len(args) == 1:
-            if args[0] < 0 or args[0] > self._size:
-                raise ValueError('索引有误')
-            self.remove(args[0], args[0] + 1)
-        elif len(args) == 2:
-            lo, hi = args
-            if lo < 0 or lo > self._size:
-                raise ValueError('索引有误')
-            if hi < 0 or hi > self._size:
-                raise ValueError('索引有误')
-            if lo == hi:
-                return 0
-            while hi < self._size:
-                self._elem[lo] = self._elem[hi]
-                lo += 1
-                hi += 1
-            self._elem = self._elem[:lo]
-            self._size = lo
-            return hi - lo
-        else:
-            raise ValueError('参数过多')
+    def insert(self, index: int, data):
+        """与列表的插入语义保持一致"""
+        self._elem.insert(index, data)
 
-    def deduplicate(self):
+    def remove_range(self, lo: int, hi: int):
+        """区间删除"""
+        if lo < 0 or lo > self._size:
+            raise ValueError('索引有误')
+        if hi < 0 or hi > self._size:
+            raise ValueError('索引有误')
+        if lo == hi:
+            return 0
+        while hi < self._size:
+            self._elem[lo] = self._elem[hi]
+            lo += 1
+            hi += 1
+        self._elem = self._elem[:lo]
+        self._size = lo
+        return hi - lo
+
+    def remove(self, index):
+        """删除指定元素"""
+        if index < 0 or index > self._size:
+            raise ValueError('索引有误')
+        return self.remove_range(index, index + 1)
+
+    def deduplicate(self) -> int:
+        """无序向量去重，返回重复元素个数"""
         old = self._size
         i = 1
         while i < self._size:
@@ -96,27 +108,12 @@ class Vector:
         return old - self._size
 
     def traverse(self, visit=print):
+        """遍历向量，默认打印"""
         for i in range(self._size):
             visit(self._elem[i])
 
-    def disordered(self):
-        n = 0  # 逆序对数
-        for i in range(1, self._size):
-            if self._elem[i - 1] > self._elem[i]:
-                n += 1
-        return n  # n=0说明有序
-
-    def uniquify1(self):  # 有序向量去重
-        old = self._size
-        i = 1
-        while i < self._size:
-            if self._elem[i - 1] == self._elem[i]:
-                self.remove(i)
-            else:
-                i += 1
-        return old - self._size
-
-    def uniquify(self):  # 有序向量去重
+    def uniquify(self):
+        """有序向量去重"""
         old = self._size
         i = 0
         for j in range(1, self._size):
@@ -129,42 +126,46 @@ class Vector:
         self._elem = self._elem[:i + 1]
         return old - self._size
 
-    @staticmethod
-    def binSearch_A(A, e, lo, hi):  # 设置成静态方法,三分支
+    def _binSearch_A(self, e, lo=0, hi=None):
+        """三分支二分查找"""
+        # bisect.bisect_left 实现该方法
+        if lo < 0:
+            raise ValueError('lo must be non-negative')
+        if hi is None:
+            hi = self._size
         while lo < hi:
             mi = (lo + hi) >> 1
-            if A[mi] > e:
+            if self._elem[mi] > e:
                 hi = mi
-            elif A[mi] < e:
+            elif self._elem[mi] < e:
                 lo = mi + 1
             else:
                 return mi
         return -1  # 查找失败
 
-    @staticmethod
-    def binSearch_B(A, e, lo, hi):  # 二分支
+    def _binSearch(self, e, lo=0, hi=None):
+        """二分支"""
+        if lo < 0:
+            raise ValueError('lo must be non-negative')
+        if hi is None:
+            hi = self._size
         while hi - lo > 1:
             mi = (lo + hi) >> 1
-            if A[mi] > e:
+            if self._elem[mi] > e:
                 hi = mi
             else:
                 lo = mi
-        if A[lo] == e:
+        if self._elem[lo] == e:
             return lo
         else:
             return -1
 
-    @staticmethod
-    def binSearch(A, e, lo, hi):
-        while lo < hi:
-            mi = (lo + hi) >> 1
-            if A[mi] > e:
-                hi = mi
-            else:
-                lo = mi + 1
-        return lo - 1
-
-    def bubbleSort(self, lo, hi):
+    def _bubbleSort(self, lo=0, hi=None):
+        """冒泡排序"""
+        if lo < 0:
+            raise ValueError('lo must be non-negative')
+        if hi is None:
+            hi = self._size
         sort = False
         while not sort:
             sort = True
@@ -174,7 +175,12 @@ class Vector:
                     sort = False
             hi -= 1
 
-    def selectSort(self, lo, hi):
+    def _selectSort(self, lo=0, hi=None):
+        """选择排序"""
+        if lo < 0:
+            raise ValueError('lo must be non-negative')
+        if hi is None:
+            hi = self._size
         temp = lo
         while hi > lo:
             for i in range(lo, hi):
@@ -184,14 +190,20 @@ class Vector:
             hi -= 1
             temp = lo
 
-    def mergeSort(self, lo, hi):
+    def _mergeSort(self, lo=0, hi=None):
+        """归并排序"""
+        if lo < 0:
+            raise ValueError('lo must be non-negative')
+        if hi is None:
+            hi = self._size
         if hi - lo < 2: return
         mi = (lo + hi) >> 1
-        self.mergeSort(lo, mi)
-        self.mergeSort(mi, hi)
-        self.merge(lo, mi, hi)
+        self._mergeSort(lo, mi)
+        self._mergeSort(mi, hi)
+        self._merge(lo, mi, hi)
 
-    def merge(self, lo, mi, hi):
+    def _merge(self, lo, mi, hi):
+        """归并排序算法"""
         A = self._elem[lo:mi]
         B = self._elem[mi:hi]
         i = j = 0
@@ -213,7 +225,4 @@ class Vector:
         pass
 
     def sort(self, lo, hi):
-        sortes = [self.bubbleSort, self.selectSort, self.mergeSort,
-                  self.heapSort, self.quickSort]
-        s = random.choice(sortes)
-        s(lo, hi)
+        self.heapSort(lo, hi)

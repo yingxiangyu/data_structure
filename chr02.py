@@ -219,10 +219,37 @@ class Vector:
                 k += 1
 
     def heapSort(self, lo, hi):
-        pass
+        """堆排序"""
+        from chr10 import PriorityQueueComplHeap
+        heapq = PriorityQueueComplHeap()
+        heapq.heapify(self._elem[lo:hi])  # 构建大顶堆
+        for i in range(hi - lo):
+            # 最大元素归位
+            self._elem[hi - i], self._elem[lo] = self._elem[lo], self._elem[hi - i]
+            # 下滤首元素
+            heapq.percolate_down(0)
+
+    def partition(self, lo, hi):
+        if lo <= hi:
+            return
+        t = self._elem[lo]
+        index = lo
+        i = lo
+        j = lo
+        for k in range(lo + 1, hi):
+            if self._elem[k] <= t:
+                self._elem[k], self._elem[i + 1] = self._elem[i + 1], self._elem[k]
+                j += 1
+                i += 1
+            else:
+                j += 1
+        self._elem[lo], self._elem[i] = self._elem[i], self._elem[lo]
+        return i
 
     def quickSort(self, lo, hi):
-        pass
+        t = self.partition(lo, hi)
+        self.quickSort(lo, t)
+        self.quickSort(t + 1, hi)
 
     def sort(self, lo, hi):
         self.heapSort(lo, hi)

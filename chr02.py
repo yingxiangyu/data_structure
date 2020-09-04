@@ -19,7 +19,7 @@ class Vector:
         """复制向量A的区间lo到hi，通过复制初始化向量"""
         self._size = 0
         self._elem = []
-        if len(A) <= hi: raise IndexError
+        if len(A) < hi: raise IndexError
         while lo < hi:
             self._elem.append(A[lo])
             self._size += 1
@@ -55,12 +55,12 @@ class Vector:
     def find(self, data, lo=None, hi=None):
         """查找指定元素，返回找到的第一个元素索引，不指定区间默认全向量查找"""
         if lo is None and hi is None:  # 不指定查找区间时在整个数组查找
-            self.find(data, 0, self._size)
-        while lo <= hi:
-            hi -= 1
-            if self._elem[hi] == data:
+            return self.find(data, 0, self._size)
+        while lo < hi:
+            if self._elem[lo] == data:
                 break
-        return hi
+            lo += 1
+        return lo if lo != hi else -1
 
     def disordered(self):
         """返回向量的逆序对数"""
@@ -71,8 +71,9 @@ class Vector:
         return n  # n=0说明有序
 
     def insert(self, index: int, data):
-        """与列表的插入语义保持一致"""
+        """与列表的插入语义保持一致，index超出范围时不报错，插入到最后"""
         self._elem.insert(index, data)
+        self._size += 1
 
     def remove_range(self, lo: int, hi: int):
         """区间删除"""
@@ -91,7 +92,7 @@ class Vector:
         return hi - lo
 
     def remove(self, index):
-        """删除指定元素"""
+        """删除指定位置的元素"""
         if index < 0 or index > self._size:
             raise ValueError('索引有误')
         return self.remove_range(index, index + 1)
@@ -126,7 +127,7 @@ class Vector:
         self._elem = self._elem[:i + 1]
         return old - self._size
 
-    def _binSearch_A(self, e, lo=0, hi=None):
+    def binSearch_A(self, e, lo=0, hi=None):
         """三分支二分查找"""
         # bisect.bisect_left 实现该方法
         if lo < 0:
@@ -143,7 +144,7 @@ class Vector:
                 return mi
         return -1  # 查找失败
 
-    def _binSearch(self, e, lo=0, hi=None):
+    def binSearch(self, e, lo=0, hi=None):
         """二分支"""
         if lo < 0:
             raise ValueError('lo must be non-negative')
@@ -218,22 +219,8 @@ class Vector:
                 j += 1
                 k += 1
 
-    def heapSort(self, lo, hi):
-        """堆排序"""
-        from chr10 import PriorityQueueComplHeap
-        heapq = PriorityQueueComplHeap()
-        heapq.heapify(self._elem[lo:hi])  # 构建大顶堆
-        for i in range(hi - lo):
-            # 最大元素归位
-            self._elem[hi - i], self._elem[lo] = self._elem[lo], self._elem[hi - i]
-            # 下滤首元素
-            heapq.percolate_down(0)
-
     def partition(self, lo, hi):
-        if lo <= hi:
-            return
         t = self._elem[lo]
-        index = lo
         i = lo
         j = lo
         for k in range(lo + 1, hi):
@@ -246,10 +233,16 @@ class Vector:
         self._elem[lo], self._elem[i] = self._elem[i], self._elem[lo]
         return i
 
-    def quickSort(self, lo, hi):
+    def quickSort(self, lo=0, hi=None):
+        if lo < 0:
+            raise ValueError('lo must be non-negative')
+        if hi is None:
+            hi = self._size
+        if lo >= hi:
+            return
         t = self.partition(lo, hi)
         self.quickSort(lo, t)
         self.quickSort(t + 1, hi)
 
     def sort(self, lo, hi):
-        self.heapSort(lo, hi)
+        self.quickSort(lo, hi)
